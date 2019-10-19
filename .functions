@@ -1,0 +1,79 @@
+#!/bin/sh
+
+# Reload ZSH configuration
+function reload() {
+    #source ~/.zshenv
+    #source ~/.zprofile
+    source ~/.zshrc
+}
+
+# Print PATH
+function path() { echo ${PATH} | tr ':' '\n' }
+
+# File search functions
+function f() { find . -iname "*$1*" ${@:2} }
+function r() { grep "$1" ${@:2} -R . }
+
+# Create a folder and move into it in one command
+function mkcd() { mkdir -p "$@" && cd "$_"; }
+
+# nmcli
+function con() {
+    if [[ "$#" -eq 0 ]]; then
+        args=(--fields name,type,device connection show --active --order type)
+    elif [[ "$#" -eq 1 ]] then
+        if [[ "${1}" == 'show' ]] || [[ "${1}" == 's' ]]; then
+            args=(connection show)
+        elif [[ "${1}" == 'down' ]] || [[ "${1}" == 'd' ]]; then
+            active_wifi_con=$(nmcli --get name con show --active --order type | head -1)
+            args=(connection down ${active_wifi_con})
+        else
+            args=(--pretty connection up ${1})
+        fi
+    else
+        args=(connection $@)
+    fi
+
+    nmcli ${args}
+}
+
+# Init NVM
+function nvm() {
+    \. ~/.nvm-init
+    echo "NVM Initialized"
+}
+
+# Mount sshfs
+function ssh-mount() {
+    [ -z "${1}" ] && echo "Usage: ${0} host:dir" && return 1
+    host=`echo "${1}" | cut -d: -f1`
+    rdir=`echo "${1}" | cut -d: -f2 -s`
+    ldir="${host}"
+    [ -z "${rdir}" ] && rdir='.'
+    cd ${HOME}
+    if [ `ls -1 ${ldir} 2>/dev/null | wc -l` -ne 0 ]; then
+      echo "Destination directory '${ldir}' is not empty:" && ls -F ${ldir}
+      return 2
+    else
+      mkdir -p ${ldir}
+    fi
+    sshfs ${host}:${rdir} ${ldir} && ls -F ${ldir}
+}
+
+# Work with diary
+function diary() {
+    diary_file="${HOME}/diary.txt"
+
+    if [[ $# -gt 0 ]]; then
+        echo >> ${diary_file}
+        echo "[$(date +%Y-%m-%d_%H:%M:%S)]" >> ${diary_file}
+        echo "$*" >> ${diary_file}
+    else
+        nvim ${diary_file}
+    fi
+}
+
+# Read MD
+function rmd() {
+    pandoc ${1} | lynx -stdin
+}

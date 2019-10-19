@@ -1,0 +1,21 @@
+#!sh
+
+git clone --bare git@github.com:andreygolik/dotfiles-public.git ${HOME}/.dotfiles.git \
+|| exit 1
+
+echo ".dotfiles.git" >> .gitignore
+
+dotfiles() {
+  /usr/bin/git --git-dir=${HOME}/.dotfiles.git --work-tree=${HOME} $@
+}
+
+dotfiles checkout
+if [ $? = 0 ]; then
+    echo "Checked out config.";
+else
+  echo "Please manually back up and remove your pre-existing dot files.";
+  exit 2
+fi;
+
+dotfiles config status.showUntrackedFiles no
+dotfiles status
